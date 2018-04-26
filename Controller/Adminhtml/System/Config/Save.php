@@ -60,6 +60,7 @@ class Save extends AbstractConfig
 	
     public function CreateConfig(){
     	$port = '3306';
+    	define('TABLE_PREFIX', $this->rm_db(ConfigOptionsListConstants::KEY_PREFIX));
     	$db_group = array(
     			'DB_HOST'=>$this->rm_db(ConfigOptionsListConstants::KEY_HOST),
     			'DB_PORT'=>$port,

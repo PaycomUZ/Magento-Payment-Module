@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `payme_transactions` (
+CREATE TABLE IF NOT EXISTS `{TABLE_PREFIX}payme_transactions` (
   `transaction_id` bigint(11) NOT NULL AUTO_INCREMENT COMMENT 'идентификатор транзакции ',
   `paycom_transaction_id` char(25) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Номер или идентификатор транзакции в биллинге мерчанта. Формат строки определяется мерчантом.',
   `paycom_time` varchar(13) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Время создания транзакции Paycom.',

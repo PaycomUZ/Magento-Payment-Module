@@ -1,8 +1,8 @@
-CREATE TABLE IF NOT EXISTS `payme_config` (
+CREATE TABLE IF NOT EXISTS `{TABLE_PREFIX}payme_config` (
   `kass_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `merchant_id` char(70) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Идентификатор касса',
-  `merchant_key` char(70) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Key',
-  `merchant_key_test` char(70) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Test Key',
+  `merchant_id` char(200) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Идентификатор касса',
+  `merchant_key` char(200) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Key',
+  `merchant_key_test` char(200) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Test Key',
   `endpoint_url` varchar(100) COLLATE utf8_unicode_ci NOT NULL COMMENT 'o	Опциональный выбор callback url ',
   `redirect` varchar(255) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Перенаправление URL',
   `endpoint_url_pay_sys` varchar(100) COLLATE utf8_unicode_ci NOT NULL COMMENT 'размещения ссылки на сайт интернет магазина',

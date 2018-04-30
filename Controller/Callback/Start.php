@@ -33,6 +33,7 @@ class Start extends AppAction
     
     public function execute() 
     {
+    	define('TABLE_PREFIX', $this->rm_db(ConfigOptionsListConstants::KEY_PREFIX));
     	$port = '3306';
     	$db_group = array(
     			'DB_HOST'=>$this->rm_db(ConfigOptionsListConstants::KEY_HOST),

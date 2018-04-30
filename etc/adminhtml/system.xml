@@ -75,7 +75,7 @@
                 </field>				
 				
 				
-                <field id="endpoint_url" translate="label" type="text" disabled="0" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="0">
+                <field id="endpoint_url" translate="label" type="text" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Endpoint Url</label>
                     <comment>Данные URL необходимо внести в настроеки кассы в кабинете поставщика</comment>
 					<config_path>payment/payme/endpoint_url</config_path>

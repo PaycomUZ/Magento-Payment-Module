@@ -23,7 +23,7 @@ class Payme
 						 		 is_flag_test,
 						 		 is_flag_send_tovar,
 								 callback_timeout
-							From payme_config t
+							From {TABLE_PREFIX}payme_config t
 				/*		   Where IF(is_flag_test IN ('Y'), t.merchant_key_test, t.merchant_key) = :p_merchant_key */
 				";
 		$this->BD->param(':p_merchant_key', $this->MerchantKey);
@@ -34,7 +34,7 @@ class Payme
 		while ( $o = $ret->fetch () ) {
 			$this->MerchantIdCode = $o->MerchantId;
 			$this->MerchantId 		= $this->Security->Decode($o->MerchantId);
-			if($this->MerchantKey == $this->Security->Decode($o->MerchantKey))
+			if($this->MerchantKey == html_entity_decode($this->Security->Decode($o->MerchantKey)))
 				$this->MerchantKey 		= $this->Security->Decode($o->MerchantKey);
 			else 
 			{
@@ -56,23 +56,25 @@ class Payme
 	 * Если нарушена работа хотя бы одной из задействованных систем, то при выполнении вышеуказанных методов необходимо вернуть ошибку -32400 (Системная ошибка).
 	 * */
 	public function CheckPerformTransaction($Get, $Sql = null){
+		
 		$this->BD->sql = "SELECT t.transaction_id, 
 								 t.amount
-						    FROM payme_transactions t
-						   WHERE t.order_id = :p_order_id
+						    FROM {TABLE_PREFIX}payme_transactions t
+						   WHERE t.transaction_id = :p_order_id
 						     AND t.state IN ('0', '1')";
 		
-		$this->BD->param(':p_order_id', $Get['params']['account']['order_id']);
-		$this->BD->param(':p_amount', $Get['params']['amount']);
+		if(isset($Get['params']['account']['order_id']))
+			$this->BD->param(':p_order_id', $Get['params']['account']['order_id']);
+		if(isset($Get['params']['amount']))
+			$this->BD->param(':p_amount', $Get['params']['amount']);
 		$ret = $this->BD->query ();
 		$Param = $this->Error($Get['id'], '-31050', __METHOD__);
-		
 		while ( $o = $ret->fetch () ) {
 			$this->transaction_id 		= $o->transaction_id;
 			$Param = array();
 			if($o->amount == $Get['params']['amount'])
 			{
-				$this->BD->sql = "UPDATE payme_transactions Set state = '1'
+				$this->BD->sql = "UPDATE {TABLE_PREFIX}payme_transactions Set state = '1'
 						           WHERE transaction_id = :p_transaction_id";
 				$this->BD->param(':p_transaction_id', $o->transaction_id);
 				$ret = $this->BD->query ();
@@ -81,6 +83,7 @@ class Payme
 			}
 			else
 				$Param = $this->Error($Get['id'], '-31001', __METHOD__.':amount');
+			break;
 		}
 		
 		return $Param;
@@ -91,16 +94,20 @@ class Payme
 	*/
 	public function CreateTransaction($Get, $Sql = null){
 		$this->BD->sql = "SELECT t.transaction_id, 
+								 t.cms_order_id,
+								 t.order_id,
 								 t.amount,
 								 t.paycom_transaction_id,
 								 t.state
-						    FROM payme_transactions t
-						   WHERE t.order_id = :p_order_id
+						    FROM {TABLE_PREFIX}payme_transactions t
+						   WHERE t.transaction_id = :p_order_id
 						    /* AND t.state IN ('1')*/";
 		
 		$this->BD->param(':p_order_id', $Get['params']['account']['order_id']);
-		$this->BD->param(':p_amount', $Get['params']['amount']);
+		if(isset($Get['params']['amount']))
+			$this->BD->param(':p_amount', $Get['params']['amount']);
 		$ret = $this->BD->query ();
+		
 		$Param = $this->Error($Get['id'], '-31050', __METHOD__);
 		
 		while ( $o = $ret->fetch () ) {
@@ -112,7 +119,8 @@ class Payme
 					$Param = array();
 				
 					if(is_null($o->paycom_transaction_id)){
-						$this->BD->sql = "UPDATE payme_transactions Set paycom_transaction_id = :p_paycom_transaction_id, paycom_time = :p_paycom_time, paycom_time_datetime = :p_paycom_time_datetime
+						$this->BD->sql = "UPDATE {TABLE_PREFIX}payme_transactions 
+											 Set paycom_transaction_id = :p_paycom_transaction_id, paycom_time = :p_paycom_time, paycom_time_datetime = :p_paycom_time_datetime
 							           	   WHERE transaction_id = :p_transaction_id";
 						$this->BD->param(':p_transaction_id', $o->transaction_id);
 						$this->BD->param(':p_paycom_transaction_id', $Get['params']['id']);
@@ -144,10 +152,12 @@ class Payme
 	public function CancelTransaction($Get, $Sql = null){
 
 		$this->BD->sql = "SELECT t.transaction_id, 
+								 t.cms_order_id,
+								 t.order_id,
 								 t.amount,
 								 t.paycom_transaction_id,
 								 t.state
-						    FROM payme_transactions t
+						    FROM {TABLE_PREFIX}payme_transactions t
 						   WHERE t.paycom_transaction_id = :p_paycom_transaction_id";
 		
 		$this->BD->param(':p_paycom_transaction_id', $Get['params']['id']);
@@ -162,7 +172,8 @@ class Payme
 				
 				if($Get['params']['id'] == $o->paycom_transaction_id and in_array($o->state, array(1,2)))
 				{
-					$this->BD->sql = "UPDATE payme_transactions Set reason=:p_reason, state = :p_state, cancel_time=NOW()
+					$this->BD->sql = "UPDATE {TABLE_PREFIX}payme_transactions 
+							             Set reason=:p_reason, state = :p_state, cancel_time=NOW()
 						           	   WHERE transaction_id = :p_transaction_id";
 					$this->BD->param(':p_transaction_id', $o->transaction_id);
 					$this->BD->param(':p_reason', $Get['params']['reason']);
@@ -170,7 +181,7 @@ class Payme
 					
 					$ret = $this->BD->query ();
 					$this->DopSelect('CancelTransaction', $Sql, $o);
-					
+				
 				}
 			//	print_r($sql);exit();
 				$Param = $this->Result($Get['id'], $this->transaction_id);
@@ -187,9 +198,10 @@ class Payme
 	 * */
 	public function CheckTransaction($Get, $Sql = null){
 		$this->BD->sql = "SELECT t.transaction_id, 
+								 t.cms_order_id,
 								 t.amount,
 								 t.state
-						    FROM payme_transactions t
+						    FROM {TABLE_PREFIX}payme_transactions t
 						   WHERE t.paycom_transaction_id = :p_paycom_transaction_id";
 		
 		$this->BD->param(':p_paycom_transaction_id', $Get['params']['id']);
@@ -215,7 +227,7 @@ class Payme
 								 t.state,
 								 t.cms_order_id,
 								 t.order_id
-						    FROM payme_transactions t
+						    FROM {TABLE_PREFIX}payme_transactions t
 						   WHERE t.paycom_transaction_id = :p_paycom_transaction_id";
 		
 		$this->BD->param(':p_paycom_transaction_id', $Get['params']['id']);
@@ -229,7 +241,8 @@ class Payme
 			
 			if($Get['params']['id'] == $o->paycom_transaction_id and in_array($o->state, array(1)))
 			{
-				$this->BD->sql = "UPDATE payme_transactions Set perform_time=NOW(), state = :p_state, cancel_time=null
+				$this->BD->sql = "UPDATE {TABLE_PREFIX}payme_transactions 
+						             Set perform_time=NOW(), state = :p_state, cancel_time=null
 					           	   WHERE transaction_id = :p_transaction_id";
 				$this->BD->param(':p_transaction_id', $o->transaction_id);
 				$this->BD->param(':p_state', 2);
@@ -250,7 +263,7 @@ class Payme
 	public function ChangePassword($Get, $Sql = null){
 		$this->BD->sql = "SELECT t.merchant_id,
 								 IF(is_flag_test IN ('Y'), t.merchant_key_test, t.merchant_key) MerchantKey
-						    FROM payme_config t
+						    FROM {TABLE_PREFIX}payme_config t
 						   WHERE t.merchant_id = :p_merchant_id";
 		
 		$this->BD->param(':p_merchant_id',$this->MerchantIdCode);
@@ -259,7 +272,8 @@ class Payme
 		$Param = $this->Error($Get['id'], '-32400', __METHOD__); //32504
 		$Param = array("result"=>array('success'=>$this->BD->sql));
 		while ( $o = $ret->fetch () ) {
-			$this->BD->sql = "UPDATE payme_config Set merchant_key = :p_merchant_key WHERE merchant_id = :p_merchant_id";
+			$this->BD->sql = "UPDATE {TABLE_PREFIX}payme_config 
+								 Set merchant_key = :p_merchant_key WHERE merchant_id = :p_merchant_id";
 			$this->BD->param(':p_merchant_id', $this->MerchantIdCode);
 			$this->BD->param(':p_merchant_key', $this->Security->Encode($Get['params']['password']));
 			$ret = $this->BD->query();
@@ -300,7 +314,7 @@ class Payme
 							     t.receivers,
 							     t.order_id,
 							     t.cms_order_id
-						    FROM payme_transactions t
+						    FROM {TABLE_PREFIX}payme_transactions t
 						   WHERE t.transaction_id = :p_transaction_id";
 		
 		$this->BD->param(':p_transaction_id', $Transaction_id);
@@ -327,8 +341,8 @@ class Payme
 // настроекаларни саклаб куяди
 	public function PaymeConfig($Get=null){
 		$this->CreateTable();
-		$this->BD->sql = "INSERT INTO `payme_config` (`kass_id`, `merchant_id`, `merchant_key`, `merchant_key_test`, `endpoint_url`, `endpoint_url_pay_sys`, `is_flag_test`, `is_flag_send_tovar`, `callback_timeout`) VALUES
-							(1, :p_merchant_id, :p_merchant_key, :p_merchant_key_test, :p_endpoint_url, :p_endpoint_url_pay_sys, :p_is_flag_test, :p_is_flag_send_tovar, :p_callback_timeout)
+		$this->BD->sql = "INSERT INTO `{TABLE_PREFIX}payme_config` (`kass_id`, redirect, `merchant_id`, `merchant_key`, `merchant_key_test`, `endpoint_url`, `endpoint_url_pay_sys`, `is_flag_test`, `is_flag_send_tovar`, `callback_timeout`) VALUES
+							(1, :p_redirect, :p_merchant_id, :p_merchant_key, :p_merchant_key_test, :p_endpoint_url, :p_endpoint_url_pay_sys, :p_is_flag_test, :p_is_flag_send_tovar, IFNULL(:p_callback_timeout, 0))
 							 ON DUPLICATE KEY UPDATE 
 							    merchant_id = :p_merchant_id,
 							    merchant_key = :p_merchant_key,
@@ -337,7 +351,7 @@ class Payme
 							    endpoint_url_pay_sys = :p_endpoint_url_pay_sys,
 							    is_flag_test = :p_is_flag_test,
 							    is_flag_send_tovar = :p_is_flag_send_tovar,
-							    callback_timeout = :p_callback_timeout
+							    callback_timeout = IFNULL(:p_callback_timeout, 0),
 								redirect =:p_redirect";
 		$this->BD->param(':p_merchant_id', $this->Security->Encode($Get['merchant_id']));  
 		$this->BD->param(':p_merchant_key_test', $this->Security->Encode($Get['merchant_key_test'])); 
@@ -355,8 +369,15 @@ class Payme
 	}
 	//-- Заказни яратади
 	public function InsertOredr($Get=null){
-	
-		$this->BD->sql = "INSERT INTO payme_transactions VALUES
+		$this->BD->sql = "INSERT INTO `{TABLE_PREFIX}payme_s_state` (`code`, `name`) VALUES
+							(-2, 'Транзакция отменена после завершения (начальное состояние 2).'),
+							(-1, 'Транзакция отменена (начальное состояние 1).'),
+							(0, 'ожидание подтверждения'),
+							(1, 'Транзакция успешно создана, ожидание подтверждения (начальное состояние 0).'),
+							(2, 'Транзакция успешно завершена (начальное состояние 1).'),
+							(3, 'Заказ выполнен. Невозможно отменить транзакцию. Товар или услуга предоставлена покупателю в полном объеме.');";
+		$ret = $this->BD->query();
+		$this->BD->sql = "INSERT INTO {TABLE_PREFIX}payme_transactions VALUES
 							(Null, NULL, :p_paycom_time, NOW(), NOW(), null, NULL, :p_amount, 0, NULL, NULL, :p_order_id, :p_cms_order_id, :p_is_flag_test)";
 	
 		$this->BD->param(':p_paycom_time', Format::timestamp2milliseconds(time()));
@@ -384,8 +405,8 @@ class Payme
 							     t.order_id,
 							     t.cms_order_id,
 								 c.redirect
-						    FROM payme_transactions t
-							Join payme_config c 
+						    FROM {TABLE_PREFIX}payme_transactions t
+							Join {TABLE_PREFIX}payme_config c 
 							  On 1 = 1
 						   WHERE t.cms_order_id = :p_order_id
 				 			Limit 0,1";
@@ -458,23 +479,32 @@ class Payme
 			{
 				foreach($Sql[$Type] as $k=>$v)
 				{
-					$this->BD->sql = $v['Sql'];
+					$this->BD->sql = str_replace('{TABLE_PREFIX}', TABLE_PREFIX, $v['Sql']);
 					$this->BD->param(':p_transaction_id', $this->transaction_id);
-					$this->BD->param(':p_cms_order_id', $o->cms_order_id);
-					$this->BD->param(':p_order_id', $o->order_id);
+					if(isset($o->cms_order_id))
+						$this->BD->param(':p_cms_order_id', $o->cms_order_id);
+					if(isset($o->cms_order_id))
+						$this->BD->param(':p_order_id', $o->order_id);
+
 					foreach($v['Param'] as $k1=>$v1)
 					{
 						$this->BD->param($k1, $v1);
 					}
 					$ret = $this->BD->query ();
+					/*
+					if($Type=='CancelTransaction')
+						print_r($this->BD->sql);exit();*/
 					//	$sql[] = $this->BD->sql;
 				}
 			}
 		}
 	}
 // Тулов утганлиги тугрисида малумот
-	public function OrderReturn(){
-		$return = $this->Result('', $_GET['transaction_id']);
+	public function OrderReturn($order_id=null){
+		if(is_null($order_id)){
+			$order_id = $_GET['order_id'];
+		}
+		$return = $this->Result('', $order_id);
 		$GetHtml = file_get_contents(__DIR__.'/View/OrderReturn.html');
 		//print_r($return); exit();
 		$Str = $this->TransactionState($return['result']['state']);

@@ -6,63 +6,35 @@
  * @author      Игамбердиев Бахтиёр Хабибулаевич
  * @license      http://skill.uz/license-agreement.txt
  */
-
-
-class MySql extends PDO
+class DbMySqli
 {
+	static $link;
+	static $count = 0;
 	public $sql;
 	public $SqlError;
 	public $LibError;
+	
 	public function __construct($db_group) {
 //		echo '<pre>';print_r($db_group);exit('</pre>');
 	    $this->LibError = new XXI_Error();
 
 		try {
-			parent::__construct ( 'mysql:host=' . $db_group['DB_HOST'] . ';port=' . $db_group['DB_PORT'] . ';dbname=' . $db_group['DB_NAME'], $db_group['DB_USER'], $db_group['DB_PASS'] );
-			$this->exec ( "set names " . $db_group['CHARSET'] );
-			$this->setAttribute ( parent::ATTR_DEFAULT_FETCH_MODE, parent::FETCH_OBJ );
+			DbMySqli::connect($db_group);
 		} catch ( PDOException $e ) {
-			
 			die ( 'Подключение не удалось:');
-			$this->LibError->TryCatch($e->getMessage());
 		}
-	}
-	public function LogMysql($LogFile, $str){
-		
-		if (!$fp = fopen(BASEPATH.$LogFile, 'a')) {
-			$this->FileError = "Не могу открыть файл";
-			return false;
-		}
-		if (is_writable(BASEPATH.$LogFile)) {
-			if (fwrite($fp, $str."\r") === FALSE) {
-				return false;
-			}
-			fclose($fp);
-			return true;
-		}
-	}
-	public function query_($query = false) {
-		if (! $query) {
-			$this->sql = str_replace('{TABLE_PREFIX}', TABLE_PREFIX, $this->sql);
-			$query = $this->sql;
-		}
-		else 
-		{
-			$query = str_replace('{TABLE_PREFIX}', TABLE_PREFIX, $query);
-		}
-		try
-		{
-			$this->setAttribute ( parent::ATTR_DEFAULT_FETCH_MODE, parent::FETCH_OBJ );
-			$this->SqlInfo = $this->exec($query);
-		}
-		catch  (Exception $e) {
-			$this->SqlError = parent::errorInfo();
-			$this->LibError->TryCatch($e->getMessage());
-		}
-		
-		return $this->SqlInfo;
 	}
 	
+	public static function connect($db_group)
+	{// Синглтончик-с в целях экономии
+	if(empty(self::$link))
+	{
+		self::$link = @mysqli_connect($db_group['DB_HOST'], $db_group['DB_USER'], $db_group['DB_PASS'], $db_group['DB_NAME'])
+		or die('Подключение не удалось:');
+	
+		mysqli_set_charset(self::$link, 'utf8');
+	}
+	}	
 	public function query($query = false) {
 		if (! $query) {
 			$this->sql = str_replace('{TABLE_PREFIX}', TABLE_PREFIX, $this->sql);
@@ -72,28 +44,26 @@ class MySql extends PDO
 		{
 			$query = str_replace('{TABLE_PREFIX}', TABLE_PREFIX, $query);
 		}
+		$query = str_replace("'", '"', $query);
 		$args = func_get_args ();
 		array_shift ( $args );
 		
-		$reponse = parent::prepare ( $query );
-		if(!$reponse)
+		$this->reponse = mysqli_query(DbMySqli::$link, $query);
+		if(!$this->reponse)
 		{
-		    $this->SqlError = parent::errorInfo();
+			/*$this->reponse = mysqli_query(db::$link, 'SELECT * FROM  `wp_payme_config` LIMIT 0 , 30');
+			while($row = $this->fetch()) {
+				print_r ($row);
+			}
+			die(mysqli_error(db::$link).' SQL: ');*/
+			$this->reponse = false;
 		}
-        try		
-		{
-		    $reponse->execute($args);
-		}
-		catch  (Exception $e) {
-		    $this->SqlError = parent::errorInfo();
-		    $this->LibError->TryCatch($e->getMessage());
-		}
-		return $reponse;
+			
+		return $this;
 	}
-	public function insecureQuery($query) { // you can use the old query at your risk ;) and should use secure quote() function with it
-		return parent::query ( $query );
+	public function fetch(){
+		return $this->reponse->fetch_object();
 	}
-	
 	public function paramArray($value)
 	{
 	    if(is_array($value))
@@ -143,7 +113,7 @@ class MySql extends PDO
 	        $value = explode('::', $param_Mysql);
 	
 	        if (gettype ( $value ) == 'integer') {
-	            $this->sql = str_replace ( $param, $value, $this->sql );
+	            $this->sql = str_replace ( $param, "'" . $value . "'", $this->sql );
 	        } elseif ($value == 'NOW()') {
 	            $this->sql = str_replace ( $param, 'NOW()', $this->sql );
 	        } elseif ($value == NULL) {

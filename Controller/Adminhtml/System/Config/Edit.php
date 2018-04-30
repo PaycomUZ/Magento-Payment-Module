@@ -64,6 +64,7 @@ class Edit extends AbstractScopeConfig
     
     public function InsertConfig(){
     	$port = '3306';
+    	define('TABLE_PREFIX', $this->rm_db(ConfigOptionsListConstants::KEY_PREFIX));
     	$db_group = array(
     			'DB_HOST'=>$this->rm_db(ConfigOptionsListConstants::KEY_HOST),
     			'DB_PORT'=>$port,
@@ -77,35 +78,35 @@ class Edit extends AbstractScopeConfig
     		$Http_Host = $_SERVER['HTTP_HOST'];
     	else
     		$Http_Host = '';
-    	$Sql[] = "INSERT INTO core_config_data(config_id, scope, scope_id, path, value)
+    	$Sql[] = "INSERT INTO {TABLE_PREFIX}core_config_data(config_id, scope, scope_id, path, value)
 					SELECT t.*
-					  from (select null, 'default', 0, 'payment/payme/active', '1' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/active' )
+					  from (select null, 'default', 0, 'payment/payme/active', '1' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/active' )
 					        union
-					        select null, 'default', 0, 'payment/payme/checkout_url', 'https://checkout.paycom.uz' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/checkout_url' )
+					        select null, 'default', 0, 'payment/payme/checkout_url', 'https://checkout.paycom.uz' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/checkout_url' )
 					        union
-					        select null, 'default', 0, 'payment/payme/checkout_url_test', 'https://test.paycom.uz' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/checkout_url_test' )
+					        select null, 'default', 0, 'payment/payme/checkout_url_test', 'https://test.paycom.uz' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/checkout_url_test' )
 					        union
-					        select null, 'default', 0, 'payment/payme/merchant_id', NULL from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/merchant_id' )
+					        select null, 'default', 0, 'payment/payme/merchant_id', NULL from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/merchant_id' )
 					        union
-					        select null, 'default', 0, 'payment/payme/merchant_key', NULL from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/merchant_key' )
+					        select null, 'default', 0, 'payment/payme/merchant_key', NULL from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/merchant_key' )
 					        union
-					        select null, 'default', 0, 'payment/payme/merchant_key_test', NULL from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/merchant_key_test' )
+					        select null, 'default', 0, 'payment/payme/merchant_key_test', NULL from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/merchant_key_test' )
 					        union
-					        select null, 'default', 0, 'payment/payme/status_test', 'Y' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/status_test' )
+					        select null, 'default', 0, 'payment/payme/status_test', 'Y' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/status_test' )
 					        union
-					        select null, 'default', 0, 'payment/payme/status_tovar', 'N' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/status_tovar' )
+					        select null, 'default', 0, 'payment/payme/status_tovar', 'N' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/status_tovar' )
 					        union
-					        select null, 'default', 0, 'payment/payme/callback_pay', '0' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/callback_pay' )
+					        select null, 'default', 0, 'payment/payme/callback_pay', '0' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/callback_pay' )
 					        union
-					        select null, 'default', 0, 'payment/payme/endpoint_url', 'http://{$Http_Host}/payme/callback/start' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/endpoint_url' )
+					        select null, 'default', 0, 'payment/payme/endpoint_url', 'http://{$Http_Host}/payme/callback/start' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/endpoint_url' )
 					        union
-					        select null, 'default', 0, 'payment/payme/callback_checkout_url', 'http://{$Http_Host}/?payme=pay' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/callback_checkout_url' )
+					        select null, 'default', 0, 'payment/payme/callback_checkout_url', 'http://{$Http_Host}/?payme=pay' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/callback_checkout_url' )
 					        union
-					        select null, 'default', 0, 'payment/payme/redirect', 'http://{$Http_Host}/order_return/Checkout/OrderReturn' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/redirects' )
+					        select null, 'default', 0, 'payment/payme/redirect', 'http://{$Http_Host}/order_return/Checkout/OrderReturn' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/redirects' )
 					        union
-					        select null, 'default', 0, 'payment/payme/view_batten', 'Отправить' from dual WHERE NOT EXISTS (SELECT 1 FROM core_config_data tt WHERE tt.path = 'payment/payme/view_batten' )) t";
+					        select null, 'default', 0, 'payment/payme/view_batten', 'Отправить' from dual WHERE NOT EXISTS (SELECT 1 FROM {TABLE_PREFIX}core_config_data tt WHERE tt.path = 'payment/payme/view_batten' )) t";
     	
-    	$Sql[] = " INSERT INTO `sales_order_status` (`status`, `label`) 
+    	$Sql[] = " INSERT INTO `{TABLE_PREFIX}sales_order_status` (`status`, `label`) 
     			   Select 'payme_paid', 'Оплачена'
     			     From dual
     			    Where NOT EXISTS (SELECT 1 FROM `sales_order_status` t WHERE t.status = 'payme_paid')";
